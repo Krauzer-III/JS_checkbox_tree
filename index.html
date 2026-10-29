@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkbox Tree — тест</title>
+    <link rel="stylesheet" href="site.css" />
+    <style>
+        /* Минимальные стили страницы-обёртки, чтобы было удобно смотреть */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #f0f2f5;
+            color: #1a1a1a;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 320px;
+            gap: 20px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 800px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .panel h1 {
+            font-size: 20px;
+            margin: 0 0 4px;
+        }
+
+        .panel h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #888;
+            margin: 0 0 12px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .toolbar button {
+            padding: 6px 12px;
+            font-size: 13px;
+            border: 1px solid #c8ccd4;
+            background: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .toolbar button:hover {
+            background: #eef2f7;
+        }
+
+        #result {
+            font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            font-size: 12px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 6px;
+            padding: 12px;
+            min-height: 120px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow: auto;
+            max-height: 400px;
+        }
+
+        #result .key {
+            color: #9cdcfe;
+        }
+
+        #result .num {
+            color: #b5cea8;
+        }
+
+        #result .empty {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="layout">
+        <div class="panel">
+            <h1>Checkbox Tree</h1>
+            <div class="subtitle">
+                <b>▾</b> свернуть / развернуть &nbsp;·&nbsp;
+                <b>☑</b> отметить / снять вложенные &nbsp;·&nbsp;
+                клик по названию или чекбоксу — отметка самой ноды
+            </div>
+
+            <div class="toolbar">
+                <button id="btn-expand">Развернуть всё</button>
+                <button id="btn-collapse">Свернуть всё</button>
+                <button id="btn-check-all">Отметить всё</button>
+                <button id="btn-uncheck-all">Снять всё</button>
+                <button id="btn-demo">Демо-набор</button>
+            </div>
+
+            <div id="tree"></div>
+        </div>
+
+        <div class="panel">
+            <h2>Состояние</h2>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script src="tree.js"></script>
+    <script>
+        const testData = [
+            { ID: 1, MaterialObjectTypeName: 'Оборудование', ParentID: null },
+            { ID: 2, MaterialObjectTypeName: 'Насосы', ParentID: 1 },
+            { ID: 3, MaterialObjectTypeName: 'Насос центробежный', ParentID: 2 },
+            { ID: 4, MaterialObjectTypeName: 'Насос шестерённый', ParentID: 2 },
+            { ID: 5, MaterialObjectTypeName: 'Насос вакуумный', ParentID: 2 },
+            { ID: 6, MaterialObjectTypeName: 'Клапаны', ParentID: 1 },
+            { ID: 7, MaterialObjectTypeName: 'Клапан обратный', ParentID: 6 },
+            { ID: 8, MaterialObjectTypeName: 'Клапан предохранит.', ParentID: 6 },
+            { ID: 9, MaterialObjectTypeName: 'Трубопроводы', ParentID: 1 },
+            { ID: 10, MaterialObjectTypeName: 'Труба стальная', ParentID: 9 },
+            { ID: 11, MaterialObjectTypeName: 'Труба ПВХ', ParentID: 9 },
+            { ID: 12, MaterialObjectTypeName: 'Резервуары', ParentID: null },
+            { ID: 13, MaterialObjectTypeName: 'Резервуар РВС', ParentID: 12 },
+            { ID: 14, MaterialObjectTypeName: 'Резервуар РГС', ParentID: 12 },
+            { ID: 15, MaterialObjectTypeName: 'Резервуар подземный', ParentID: 12 },
+        ];
+
+        const resultEl = document.getElementById('result');
+
+        function renderResult(selectedIds) {
+            const manual = tree.getManuallySelected();
+
+            if (selectedIds.length === 0) {
+                resultEl.innerHTML = '<span class="empty">Ничего не выбрано</span>';
+                return;
+            }
+
+            const allIds = [...selectedIds].sort((a, b) => a - b);
+            const manualIds = [...manual].sort((a, b) => a - b);
+
+            resultEl.innerHTML =
+                `<span class="key">Выбрано всего (${allIds.length}):</span>\n` +
+                `<span class="num">[${allIds.join(', ')}]</span>\n\n` +
+                `<span class="key">Отмечено вручную (${manualIds.length}):</span>\n` +
+                `<span class="num">[${manualIds.join(', ')}]</span>`;
+        }
+
+        const tree = new CheckboxTree('#tree', {
+            data: testData,
+            onChange: renderResult,
+        });
+
+        renderResult([]);
+
+        document.getElementById('btn-expand').addEventListener('click', () => tree.expandAll());
+        document.getElementById('btn-collapse').addEventListener('click', () => tree.collapseAll());
+        document.getElementById('btn-check-all').addEventListener('click', () => tree.checkAll(true));
+        document.getElementById('btn-uncheck-all').addEventListener('click', () => tree.checkAll(false));
+        document.getElementById('btn-demo').addEventListener('click', () => {
+            tree.checkAll(false);
+            tree.setChecked([2], true); // «Насосы» — целиком
+            tree.setChecked([8], true); // один клапан
+        });
+    </script>
+</body>
+
+</html>
