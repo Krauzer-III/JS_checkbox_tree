@@ -1,0 +1,15 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Tree Select browser tests</title><script src="../dist/tree-select.js"></script><body><div id="a"></div><div id="b"></div><pre id="log"></pre><script>
+const data=[{ID:1,ParentID:null,MaterialObjectTypeName:"Мебель"},{ID:2,ParentID:1,MaterialObjectTypeName:"Стулья"},{ID:3,ParentID:2,MaterialObjectTypeName:"Кресло"},{ID:4,ParentID:null,MaterialObjectTypeName:"Освещение"},{ID:5,ParentID:4,MaterialObjectTypeName:"Лампы"}];
+let count=0;const assert=(x,label)=>{if(!x)throw Error(label);count++};
+try{
+const t=new CheckboxTree("#a",{data,name:"CategoryIds"});
+t.setChecked([3]);t.setSearch("кресло");assert(!t.map.get("1").li.hidden&&!t.map.get("2").li.hidden&&!t.map.get("3").li.hidden,"Search keeps ancestor path");
+t.setSearch("лампы");t.setChecked([5]);t.setSearch("стулья");t.setChecked([2]);assert(t.getSelected().join(",")==="2,3,5"||t.getSelected().join(",")==="3,2,5"||t.selected.size===3,"Selections persist across searches");
+t.setChecked([1]);assert(!t.selected.has("4"),"Parent selection is independent");
+t.selectBranch(1);assert(t.selected.has("2")&&t.selected.has("3"),"Branch action selects descendants");
+assert([...document.querySelectorAll("#a input:checked")].length===4,"Hidden selected inputs remain in form");
+const r=new RadioTree("#b",{data,name:"SelectedCategoryId"});r.setSelected(3);r.setSearch("лампы");r.setSelected(5);assert(r.getSelected()===5&&r.selected.size===1,"Radio has one selected item");
+r.setSelected(1);assert(r.getSelected()===1,"Radio parent selectable");
+document.getElementById("log").textContent="PASS: "+count+" browser assertions";
+}catch(e){document.getElementById("log").textContent="FAIL: "+e.message;throw e}
+</script></body></html>

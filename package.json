@@ -1,0 +1,1 @@
+{"name":"tree-select-kit","version":"1.0.0","private":true,"description":"Checkbox/radio trees with full path search and ASP.NET Core MVC sample","scripts":{"test":"node tests/node-tests.js","check":"node --check dist/tree-select.js"}}

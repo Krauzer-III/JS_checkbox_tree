@@ -1,0 +1,10 @@
+@model TreeDemoViewModel
+@{ ViewData["Title"] = "Tree Select MVC Demo"; }
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tree Select MVC Demo</title>
+<link rel="stylesheet" href="~/lib/tree-select/tree-select.css"><style>body{font:14px system-ui;max-width:850px;margin:36px auto;padding:0 16px;background:#f7f8fc}.trees{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:650px){.trees{grid-template-columns:1fr}}</style>
+<script src="~/lib/tree-select/tree-select.js"></script></head><body><h1>Checkbox + Radio Tree</h1>
+<form asp-action="Index" method="post"><div asp-validation-summary="All"></div>
+<div class="trees"><div><h2>Checkbox</h2><tree-select items="Model.Nodes" name="CategoryIds" mode="checkbox" selected-values="Model.CategoryIds" /></div>
+<div><h2>Radio</h2><tree-select items="Model.Nodes" name="SelectedCategoryId" mode="radio" value="Model.SelectedCategoryId" /></div></div><p><button type="submit">Сохранить</button></p></form>
+@if(Model.IsPosted) { <p>Выбрано: @string.Join(", ",Model.CategoryIds); Radio: @Model.SelectedCategoryId</p> }
+</body></html>
