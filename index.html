@@ -5,141 +5,70 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkbox Tree — тест</title>
-    <link rel="stylesheet" href="site.css" />
-    <style>
-        /* Минимальные стили страницы-обёртки, чтобы было удобно смотреть */
-        * {
-            box-sizing: border-box;
-        }
 
-        body {
-            margin: 0;
-            padding: 24px;
-            background: #f0f2f5;
-            color: #1a1a1a;
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 320px;
-            gap: 20px;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        @media (max-width: 800px) {
-            .layout {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .panel {
-            background: #fff;
-            border-radius: 10px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
-
-        .panel h1 {
-            font-size: 20px;
-            margin: 0 0 4px;
-        }
-
-        .panel h2 {
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #888;
-            margin: 0 0 12px;
-            font-weight: 600;
-        }
-
-        .subtitle {
-            color: #666;
-            font-size: 13px;
-            margin-bottom: 16px;
-        }
-
-        .toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 14px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .toolbar button {
-            padding: 6px 12px;
-            font-size: 13px;
-            border: 1px solid #c8ccd4;
-            background: #fff;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .toolbar button:hover {
-            background: #eef2f7;
-        }
-
-        #result {
-            font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-            font-size: 12px;
-            background: #1e1e1e;
-            color: #d4d4d4;
-            border-radius: 6px;
-            padding: 12px;
-            min-height: 120px;
-            white-space: pre-wrap;
-            word-break: break-word;
-            overflow: auto;
-            max-height: 400px;
-        }
-
-        #result .key {
-            color: #9cdcfe;
-        }
-
-        #result .num {
-            color: #b5cea8;
-        }
-
-        #result .empty {
-            color: #666;
-            font-style: italic;
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="checkbox-tree.css" />
 </head>
 
-<body>
-    <div class="layout">
-        <div class="panel">
-            <h1>Checkbox Tree</h1>
-            <div class="subtitle">
-                <b>▾</b> свернуть / развернуть &nbsp;·&nbsp;
-                <b>☑</b> отметить / снять вложенные &nbsp;·&nbsp;
-                клик по названию или чекбоксу — отметка самой ноды
+<body class="bg-light">
+    <div class="container py-4">
+        <div class="row g-4">
+            <div class="col-12 col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h1 class="h5 mb-1">Checkbox Tree</h1>
+                        <p class="text-muted small mb-3">
+                            <b>▾</b> свернуть / развернуть &nbsp;·&nbsp;
+                            клик по названию или чекбоксу — отметка самой ноды.
+                            Отметка родителя автоматически отмечает всех детей.
+                        </p>
+
+                        <div class="d-flex flex-wrap gap-2 mb-3 pb-3 border-bottom">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-action="expand">Развернуть
+                                всё</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-action="collapse">Свернуть
+                                всё</button>
+                            <button type="button" class="btn btn-sm btn-outline-success"
+                                data-action="check-all">Отметить всё</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-action="uncheck-all">Снять
+                                всё</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-action="demo">Демо-набор</button>
+
+                            <div class="form-check form-switch ms-auto">
+                                <input class="form-check-input" type="checkbox" id="layout-switch" />
+                                <label class="form-check-label small" for="layout-switch">Многострочный вид</label>
+                            </div>
+                        </div>
+
+                        <form id="tree-form">
+                            <div id="tree"></div>
+                        </form>
+                    </div>
+                </div>
             </div>
 
-            <div class="toolbar">
-                <button id="btn-expand">Развернуть всё</button>
-                <button id="btn-collapse">Свернуть всё</button>
-                <button id="btn-check-all">Отметить всё</button>
-                <button id="btn-uncheck-all">Снять всё</button>
-                <button id="btn-demo">Демо-набор</button>
+            <div class="col-12 col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h6 text-uppercase text-muted mb-3">Состояние</h2>
+                        <pre id="result" class="bg-dark text-light rounded p-3 small mb-0"
+                            style="min-height:120px; max-height:400px; overflow:auto; white-space:pre-wrap; word-break:break-word;"></pre>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mt-4">
+                    <div class="card-body">
+                        <h2 class="h6 text-uppercase text-muted mb-3">FormData (что уйдёт в контроллер)</h2>
+                        <pre id="formdata" class="bg-dark text-light rounded p-3 small mb-0"
+                            style="min-height:80px; white-space:pre-wrap; word-break:break-word;"></pre>
+                    </div>
+                </div>
             </div>
-
-            <div id="tree"></div>
-        </div>
-
-        <div class="panel">
-            <h2>Состояние</h2>
-            <div id="result"></div>
         </div>
     </div>
 
-    <script src="tree.js"></script>
+    <script src="checkbox-tree.js"></script>
     <script>
         const testData = [
             { ID: 1, MaterialObjectTypeName: 'Оборудование', ParentID: null },
@@ -160,40 +89,77 @@
         ];
 
         const resultEl = document.getElementById('result');
+        const formdataEl = document.getElementById('formdata');
 
         function renderResult(selectedIds) {
             const manual = tree.getManuallySelected();
-
             if (selectedIds.length === 0) {
-                resultEl.innerHTML = '<span class="empty">Ничего не выбрано</span>';
+                resultEl.textContent = 'Ничего не выбрано';
                 return;
             }
-
             const allIds = [...selectedIds].sort((a, b) => a - b);
             const manualIds = [...manual].sort((a, b) => a - b);
+            resultEl.textContent =
+                `Выбрано всего (${allIds.length}):\n` +
+                `[${allIds.join(', ')}]\n\n` +
+                `Отмечено вручную (${manualIds.length}):\n` +
+                `[${manualIds.join(', ')}]`;
+        }
 
-            resultEl.innerHTML =
-                `<span class="key">Выбрано всего (${allIds.length}):</span>\n` +
-                `<span class="num">[${allIds.join(', ')}]</span>\n\n` +
-                `<span class="key">Отмечено вручную (${manualIds.length}):</span>\n` +
-                `<span class="num">[${manualIds.join(', ')}]</span>`;
+        function renderFormData() {
+            const fd = new FormData(document.getElementById('tree-form'));
+            const values = fd.getAll('MaterialObjectTypeIds');
+            formdataEl.textContent = values.length
+                ? `name="MaterialObjectTypeIds"\nvalue=[${values.join(', ')}]\nтип: int[${values.length}]`
+                : 'Ничего не отмечено';
         }
 
         const tree = new CheckboxTree('#tree', {
             data: testData,
-            onChange: renderResult,
+            name: 'MaterialObjectTypeIds',
+            layout: 'list',
+            onChange: (selected) => {
+                renderResult(selected);
+                renderFormData();
+            },
         });
 
         renderResult([]);
+        renderFormData();
 
-        document.getElementById('btn-expand').addEventListener('click', () => tree.expandAll());
-        document.getElementById('btn-collapse').addEventListener('click', () => tree.collapseAll());
-        document.getElementById('btn-check-all').addEventListener('click', () => tree.checkAll(true));
-        document.getElementById('btn-uncheck-all').addEventListener('click', () => tree.checkAll(false));
-        document.getElementById('btn-demo').addEventListener('click', () => {
-            tree.checkAll(false);
-            tree.setChecked([2], true); // «Насосы» — целиком
-            tree.setChecked([8], true); // один клапан
+        document.querySelector('[data-action="expand"]').closest('.d-flex').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            switch (btn.dataset.action) {
+                case 'expand': tree.expandAll(); break;
+                case 'collapse': tree.collapseAll(); break;
+                case 'check-all': tree.checkAll(true); break;
+                case 'uncheck-all': tree.checkAll(false); break;
+                case 'demo':
+                    tree.checkAll(false);
+                    tree.setChecked([2], true);
+                    tree.setChecked([8], true);
+                    break;
+            }
+        });
+
+        document.getElementById('layout-switch').addEventListener('change', (e) => {
+            const selectedBefore = tree.getSelected();
+            const manualBefore = tree.getManuallySelected();
+
+            tree.layout = e.target.checked ? 'grid' : 'list';
+            tree._render();
+
+            tree.manualChecked = new Set(manualBefore);
+            selectedBefore.forEach((id) => {
+                const st = tree.nodes.get(id);
+                if (st) {
+                    st.checked = true;
+                    if (st.checkbox) st.checkbox.checked = true;
+                }
+            });
+            renderResult(tree.getSelected());
+            renderFormData();
         });
     </script>
 </body>

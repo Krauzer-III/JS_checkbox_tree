@@ -1,0 +1,109 @@
+/* ---------- Базовые стили плагина (поверх Bootstrap) ---------- */
+
+.ctree {
+    font-size: 14px;
+}
+
+.ctree ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.ctree-children {
+    display: block;
+}
+
+.ctree-children--collapsed {
+    display: none;
+}
+
+.ctree-item {
+    display: block;
+}
+
+.ctree-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px 4px calc(6px + var(--ctree-indent, 0px));
+    border-radius: 4px;
+}
+
+.ctree-row:hover {
+    background: #f5f7fa;
+}
+
+/* Кнопка-переключатель */
+.ctree-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 1;
+    font-size: 12px;
+}
+
+/* Плейсхолдер той же ширины, что и кнопка-переключатель */
+.ctree-spacer {
+    display: inline-block;
+    width: 26px;
+    flex-shrink: 0;
+}
+
+.ctree-checkbox {
+    flex-shrink: 0;
+    margin: 0 6px !important;
+    cursor: pointer;
+}
+
+.ctree-label {
+    cursor: pointer;
+    user-select: none;
+    min-width: 0;
+    flex: 1;
+    margin: 0 !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ============================================================
+   Режим 'grid' — многострочное представление
+   ============================================================ */
+
+.ctree--grid .ctree-row {
+    flex-wrap: wrap;
+    padding: 8px 10px 8px calc(10px + var(--ctree-indent, 0px));
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    align-items: flex-start;
+}
+
+.ctree--grid .ctree-row:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.ctree--grid .ctree-label {
+    flex: 1 1 100%;
+    margin-top: 4px !important;
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+@media (max-width: 576px) {
+    .ctree-row {
+        padding-left: calc(4px + var(--ctree-indent, 0px) * 0.6);
+    }
+
+    .ctree--grid .ctree-row {
+        padding-left: calc(6px + var(--ctree-indent, 0px) * 0.6);
+    }
+}

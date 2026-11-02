@@ -6,6 +6,8 @@
          * @param {string|HTMLElement} container
          * @param {Object} options
          * @param {Array<{ID:any, MaterialObjectTypeName:string, ParentID:any}>} options.data
+         * @param {string} [options.name]
+         * @param {'list'|'grid'} [options.layout='list']
          * @param {(selectedIds:Array)=>void} [options.onChange]
          */
         constructor(container, options = {}) {
@@ -17,12 +19,11 @@
             if (!this.container) throw new Error('CheckboxTree: контейнер не найден');
 
             this.data = options.data || [];
+            this.name = options.name || null;
+            this.layout = options.layout === 'grid' ? 'grid' : 'list';
             this.onChange = options.onChange || (() => { });
 
-            /** @type {Map<any, {node, children, checked, el, checkbox}>} */
             this.nodes = new Map();
-
-            /** @type {Set<any>} ID, отмеченные пользователем явно */
             this.manualChecked = new Set();
 
             this._buildModel();
@@ -47,16 +48,12 @@
             this.roots = [];
             byId.forEach((node) => {
                 if (node.parentId == null || !byId.has(node.parentId)) {
-                    node.depth = 0;
                     this.roots.push(node);
                 } else {
-                    const parent = byId.get(node.parentId);
-                    node.depth = parent.depth + 1;
-                    parent.children.push(node);
+                    byId.get(node.parentId).children.push(node);
                 }
             });
 
-            // На случай, если данные пришли не отсортированные — пересчитаем глубину рекурсивно
             const setDepth = (node, depth) => {
                 node.depth = depth;
                 node.children.forEach((c) => setDepth(c, depth + 1));
@@ -79,12 +76,28 @@
         _render() {
             this.container.innerHTML = '';
             this.container.classList.add('ctree');
+            this.container.classList.add('ctree--' + this.layout);
 
             const ul = document.createElement('ul');
-            ul.className = 'ctree-root';
+            ul.className = 'ctree-root list-unstyled mb-0';
 
             this.roots.forEach((node) => ul.appendChild(this._renderNode(node)));
             this.container.appendChild(ul);
+        }
+
+        _toggleChildrenCheck(id) {
+            const state = this.nodes.get(id);
+            if (!state || !state.children.length) return;
+
+            // Если хоть один потомок не отмечен — отмечаем всех, иначе снимаем всех
+            const anyUnchecked = state.children.some(
+                (c) => !this.nodes.get(c.id).checked
+            );
+            const target = anyUnchecked;
+
+            state.children.forEach((child) =>
+                this._setNodeChecked(child.id, target, { manual: true, cascade: true })
+            );
         }
 
         _renderNode(node) {
@@ -93,61 +106,73 @@
 
             const li = document.createElement('li');
             li.className = 'ctree-item';
+            li.dataset.depth = node.depth;
             state.el = li;
 
             const row = document.createElement('div');
             row.className = 'ctree-row';
+            row.style.setProperty('--ctree-indent', (node.depth * 24) + 'px');
 
-            // Кнопка 1: свернуть/развернуть вложенные
-            const toggleBtn = document.createElement('button');
-            toggleBtn.type = 'button';
-            toggleBtn.className = 'ctree-btn ctree-toggle';
-            toggleBtn.title = 'Свернуть / развернуть';
-            toggleBtn.textContent = hasChildren ? '▾' : '';
-            toggleBtn.disabled = !hasChildren;
-            if (!hasChildren) toggleBtn.classList.add('ctree-btn--empty');
-            toggleBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this._toggleChildren(node.id);
-            });
+            // --- Кнопка 1: свернуть / развернуть вложенные ---
+            if (hasChildren) {
+                const toggleBtn = document.createElement('button');
+                toggleBtn.type = 'button';
+                toggleBtn.className = 'btn btn-sm btn-outline-secondary ctree-btn ctree-toggle';
+                toggleBtn.title = 'Свернуть / развернуть';
+                toggleBtn.tabIndex = -1;
+                toggleBtn.textContent = '▾';
+                toggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this._toggleChildren(node.id);
+                });
+                row.appendChild(toggleBtn);
 
-            // Кнопка 2: отметить/снять вложенные
-            const checkChildrenBtn = document.createElement('button');
-            checkChildrenBtn.type = 'button';
-            checkChildrenBtn.className = 'ctree-btn ctree-check-children';
-            checkChildrenBtn.title = 'Отметить / снять вложенные';
-            checkChildrenBtn.textContent = '☑';
-            checkChildrenBtn.disabled = !hasChildren;
-            if (!hasChildren) checkChildrenBtn.classList.add('ctree-btn--empty');
-            checkChildrenBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this._toggleChildrenCheck(node.id);
-            });
+                // --- Кнопка 2: отметить / снять всех вложенных ---
+                const checkChildrenBtn = document.createElement('button');
+                checkChildrenBtn.type = 'button';
+                checkChildrenBtn.className = 'btn btn-sm btn-outline-secondary ctree-btn ctree-check-children';
+                checkChildrenBtn.title = 'Отметить / снять вложенные';
+                checkChildrenBtn.tabIndex = -1;
+                checkChildrenBtn.textContent = '☑';
+                checkChildrenBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this._toggleChildrenCheck(node.id);
+                });
+                row.appendChild(checkChildrenBtn);
+            } else {
+                // Два спейсера — под обе кнопки, чтобы чекбоксы выравнивались
+                const spacer1 = document.createElement('span');
+                spacer1.className = 'ctree-spacer';
+                row.appendChild(spacer1);
+                const spacer2 = document.createElement('span');
+                spacer2.className = 'ctree-spacer';
+                row.appendChild(spacer2);
+            }
 
-            // Чекбокс самой ноды
+            // --- Чекбокс самой ноды ---
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.className = 'ctree-checkbox';
+            checkbox.className = 'form-check-input ctree-checkbox';
+            checkbox.value = String(node.id);
+            checkbox.id = 'ctree-cb-' + node.id;
+            if (this.name) checkbox.name = this.name;
             checkbox.checked = state.checked;
             state.checkbox = checkbox;
             checkbox.addEventListener('change', () => {
                 this._setNodeChecked(node.id, checkbox.checked, { manual: true, cascade: true });
             });
 
-            const label = document.createElement('span');
-            label.className = 'ctree-label';
+            const label = document.createElement('label');
+            label.className = 'ctree-label form-check-label';
+            label.setAttribute('for', checkbox.id);
             label.textContent = node.name;
-            label.title = `${node.name} (ID: ${node.id})`;
-            label.addEventListener('click', () => {
-                this._setNodeChecked(node.id, !state.checked, { manual: true, cascade: true });
-            });
 
-            row.append(toggleBtn, checkChildrenBtn, checkbox, label);
+            row.append(checkbox, label);
             li.appendChild(row);
 
             if (hasChildren) {
                 const childUl = document.createElement('ul');
-                childUl.className = 'ctree-children';
+                childUl.className = 'ctree-children list-unstyled';
                 node.children.forEach((child) =>
                     childUl.appendChild(this._renderNode(child))
                 );
@@ -164,32 +189,11 @@
             if (!state) return;
             const childUl = state.el.querySelector(':scope > .ctree-children');
             if (!childUl) return;
-            const collapsed = childUl.style.display === 'none';
-            childUl.style.display = collapsed ? '' : 'none';
-            const btn = state.el.querySelector('.ctree-toggle');
-            if (btn) btn.textContent = collapsed ? '▾' : '▸';
+            const collapsed = childUl.classList.toggle('ctree-children--collapsed');
+            const caret = state.el.querySelector('.ctree-toggle');
+            if (caret) caret.textContent = collapsed ? '▸' : '▾';
         }
 
-        _toggleChildrenCheck(id) {
-            const state = this.nodes.get(id);
-            if (!state || !state.children.length) return;
-
-            // Если хоть один потомок не отмечен — отмечаем всех. Иначе — снимаем всех.
-            const anyUnchecked = state.children.some(
-                (c) => !this.nodes.get(c.id).checked
-            );
-            const target = anyUnchecked;
-
-            state.children.forEach((child) =>
-                this._setNodeChecked(child.id, target, { manual: true, cascade: true })
-            );
-        }
-
-        /**
-         * Установить состояние узла.
-         * ВАЖНО: изменение состояния детей НЕ снимает/ставит автоматически
-         * состояние родителя. Родитель — самостоятельная категория.
-         */
         _setNodeChecked(id, checked, opts = {}) {
             const state = this.nodes.get(id);
             if (!state) return;
@@ -204,7 +208,7 @@
                 else this.manualChecked.delete(id);
             }
 
-            // Каскад только вниз: отметили родителя — отметились все дети.
+            // Каскад только вниз. Родитель — самостоятельная категория.
             if (cascade) {
                 state.children.forEach((child) =>
                     this._setNodeChecked(child.id, checked, { manual, cascade: true })
@@ -249,18 +253,18 @@
         expandAll() {
             this.container
                 .querySelectorAll('.ctree-children')
-                .forEach((el) => (el.style.display = ''));
-            this.container.querySelectorAll('.ctree-toggle').forEach((btn) => {
-                if (!btn.disabled) btn.textContent = '▾';
+                .forEach((el) => el.classList.remove('ctree-children--collapsed'));
+            this.container.querySelectorAll('.ctree-toggle').forEach((b) => {
+                b.textContent = '▾';
             });
         }
 
         collapseAll() {
             this.container
                 .querySelectorAll('.ctree-children')
-                .forEach((el) => (el.style.display = 'none'));
-            this.container.querySelectorAll('.ctree-toggle').forEach((btn) => {
-                if (!btn.disabled) btn.textContent = '▸';
+                .forEach((el) => el.classList.add('ctree-children--collapsed'));
+            this.container.querySelectorAll('.ctree-toggle').forEach((b) => {
+                b.textContent = '▸';
             });
         }
     }
